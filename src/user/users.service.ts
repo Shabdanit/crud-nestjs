@@ -1,42 +1,40 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { UserEntity } from 'src/entities/user.entity';
-import { DeleteResult, InsertResult, Repository } from 'typeorm';
+import { User } from 'src/entities/user.entity';
+import { HistoryService } from 'src/history/hisory.service';
+import { InsertResult, Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
   constructor(
     @Inject('USERS_REPOSITORY')
-    private usersRepository: Repository<UserEntity>,
+    private usersRepository: Repository<User>,
+    private historyService: HistoryService,
   ) {}
 
-  async getUsers(): Promise<UserEntity[]> {
+  async getUsers(): Promise<User[]> {
     return this.usersRepository.find();
   }
 
-  async createUser(user: UserEntity): Promise<InsertResult> {
-    return this.usersRepository.insert(user);
+  async createUser(user: User): Promise<InsertResult> {
+    const result = this.usersRepository.insert(user);
+    await this.historyService.createHistory(user, 'User created');
+    return result;
   }
 
-  async getUser(id: number): Promise<UserEntity> {
+  async getUser(id: number): Promise<User> {
     return this.usersRepository.findOne({
       where: { id: id },
     });
   }
 
-  async updateUser(id: number, user: UserEntity): Promise<UserEntity> {
+  async updateUser(id: number, user: User): Promise<User> {
     const userToUpdate = await this.getUser(id);
-    if (userToUpdate === undefined) {
+    if (!userToUpdate === undefined) {
       throw new NotFoundException();
     }
+    const previousUserData = { ...userToUpdate };
     await this.usersRepository.update(id, user);
+    await this.historyService.createHistory(previousUserData, 'User updated');
     return this.getUser(id);
-  }
-
-  async deleteUser(id: number): Promise<DeleteResult> {
-    const userToUpdate = await this.getUser(id);
-    if (userToUpdate === undefined) {
-      throw new NotFoundException();
-    }
-    return this.usersRepository.delete(id);
   }
 }

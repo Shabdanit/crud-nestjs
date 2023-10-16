@@ -1,5 +1,6 @@
 import { createConnection } from 'typeorm';
-import { UserEntity } from '../entities/user.entity';
+import { User } from '../entities/user.entity';
+import { History } from '../entities/history.entity';
 
 export const databaseProvider = [
   {
@@ -11,9 +12,11 @@ export const databaseProvider = [
         port: 5432,
         username: 'postgres',
         password: '1101',
-        database: 'taskmanagement',
-        entities: [UserEntity],
+        database: 'postgres',
+        entities: [User, History],
         synchronize: true,
+        logging: true,
       }),
   },
 ];
+//asdasd
